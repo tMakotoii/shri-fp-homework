@@ -14,38 +14,59 @@
  * Иногда промисы от API будут приходить в состояние rejected, (прямо как и API в реальной жизни)
  * Ответ будет приходить в поле {result}
  */
- import Api from '../tools/api';
+import Api from "../tools/api";
 
- const api = new Api();
+const api = new Api();
 
- /**
-  * Я – пример, удали меня
-  */
- const wait = time => new Promise(resolve => {
-     setTimeout(resolve, time);
- })
+const validateInput = (value) => {
+  if (value.length < 2 || value.length > 10) return false;
 
- const processSequence = ({value, writeLog, handleSuccess, handleError}) => {
-     /**
-      * Я – пример, удали меня
-      */
-     writeLog(value);
+  if (!/^[0-9]+(\.[0-9]+)?$/.test(value)) return false;
 
-     api.get('https://api.tech/numbers/base', {from: 2, to: 10, number: '01011010101'}).then(({result}) => {
-         writeLog(result);
-     });
+  if (parseFloat(value) <= 0) return false;
 
-     wait(2500).then(() => {
-         writeLog('SecondLog')
+  return true;
+};
 
-         return wait(1500);
-     }).then(() => {
-         writeLog('ThirdLog');
+const processSequence = ({ value, writeLog, handleSuccess, handleError }) => {
+  writeLog(value);
 
-         return wait(400);
-     }).then(() => {
-         handleSuccess('Done');
-     });
- }
+  if (!validateInput(value)) {
+    handleError("ValidationError");
+    return;
+  }
+
+  const num = Math.round(parseFloat(value));
+  writeLog(num);
+
+  api
+    .get("https://api.tech/numbers/base", { from: 10, to: 2, number: num })
+    .then(({ result }) => {
+      writeLog(result);
+      return result;
+    })
+    .then((binaryStr) => {
+      const length = binaryStr.length;
+      writeLog(length);
+      return length;
+    })
+    .then((length) => {
+      const squared = length * length;
+      writeLog(squared);
+      return squared;
+    })
+    .then((squared) => {
+      const mod = squared % 3;
+      writeLog(mod);
+      return mod;
+    })
+    .then((mod) => api.get(`https://animals.tech/${mod}`, {}))
+    .then(({ result }) => {
+      handleSuccess(result);
+    })
+    .catch((error) => {
+      handleError("API Error");
+    });
+};
 
 export default processSequence;
